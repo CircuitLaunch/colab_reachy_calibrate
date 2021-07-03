@@ -88,7 +88,7 @@ class Calibrator:
         for i in range(0, len(dxlIds)):
             if errorBits[i] != 0:
                 thereWereErrors = True
-                errorIds.append(dxlIds[i])
+                errorIds.append(int(dxlIds[i]))
         if thereWereErrors:
             self.errorIds = errorIds
 

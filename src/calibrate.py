@@ -98,7 +98,7 @@ class Calibrator:
         ny = (width - abs(y)) / width
         return math.pi * (0.16666666666667 * nx + 0.16666666666667 * ny)
 
-    def goToRestPose(self):
+    def goToRestPose(self, side):
         restPoseReq = RestPoseRequest()
         restPoseReq.side = side
         restPoseReq.speed = 0.05
@@ -131,7 +131,7 @@ class Calibrator:
 
         self.dxlIds = [ i + (20 if side == 'left' else 10) for i in range(8)]
 
-        self.goToRestPose()
+        self.goToRestPose(side)
 
         relaxReq = RelaxRequest()
         relaxReq.side = side
@@ -218,7 +218,7 @@ class Calibrator:
 
         time.sleep(1.0)
 
-        self.goToRestPose()
+        self.goToRestPose(side)
 
         relaxReq = RelaxRequest()
         relaxReq.side = side

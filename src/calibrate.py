@@ -137,7 +137,7 @@ class Calibrator:
         relaxReq.side = side
         self.reachyRelax(relaxReq)
 
-        self.recover(side)
+        # self.recover(side)
 
         time.sleep(1.0)
 

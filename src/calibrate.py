@@ -180,7 +180,7 @@ class Calibrator:
                         result = self.goToPose(pose)
                         if result == 0 or result == 1:
                             break;
-                        if not self.abort && result == 2:
+                        if not self.abort and result == 2:
                             recovering = True
                             while(recovering):
                                 rospy.loginfo('Actuator error, recovering')

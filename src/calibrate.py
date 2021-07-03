@@ -99,7 +99,7 @@ class Calibrator:
         return math.pi * (0.16666666666667 * nx + 0.16666666666667 * ny)
 
     def createMap(self, side):
-        self.semaphore.acquire()
+        self._semaphore.acquire()
         self.abort = False
         robot = moveit_commander.RobotCommander()
         self.current_group = moveit_commander.MoveGroupCommander(f'{ side }_arm')
@@ -269,8 +269,8 @@ class Calibrator:
         return result
 
     def wait(self):
-        self.semaphore.acquire()
-        self.semaphore.release()
+        self._semaphore.acquire()
+        self._semaphore.release()
 
 calibrator = None
 

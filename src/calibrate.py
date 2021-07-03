@@ -105,7 +105,6 @@ class Calibrator:
         self.restPose(restPoseReq)
 
     def createMap(self, side):
-        self._semaphore.acquire()
         self.abort = False
         robot = moveit_commander.RobotCommander()
         self.current_group = moveit_commander.MoveGroupCommander(f'{ side }_arm')
@@ -181,7 +180,7 @@ class Calibrator:
                         if self.abort:
                             rospy.loginfo('Aborting. Goint to restpose')
                             self.goToRestPose()
-                            self._semaphore.release()
+                            rospy.signal_shutdown()
                             return None
                         if result == 0 or result == 1:
                             break;
@@ -223,7 +222,6 @@ class Calibrator:
         relaxReq = RelaxRequest()
         relaxReq.side = side
         self.reachyRelax(relaxReq)
-        self.semaphore.release()
         return map
 
     def goToPose(self, pose):
@@ -268,10 +266,6 @@ class Calibrator:
         self.errorIds = None
         return result
 
-    def wait(self):
-        self._semaphore.acquire()
-        self._semaphore.release()
-
 def main():
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('calibrate', disable_signals=True);
@@ -284,14 +278,12 @@ def main():
     def sigintHandler(sig, frame):
         print('SIGINT or CTRL-C detected. Exiting gracefully')
         calibrator.abort = True
-        calibrator.wait()
-        rospy.signal_shutdown("SIGINT")
 
     signal(SIGINT, sigintHandler)
 
     def handleShutdown():
         print('rospy shutdown')
-        exit(0)
+        exit(-1)
 
     rospy.on_shutdown(handleShutdown)
 

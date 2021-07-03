@@ -37,7 +37,6 @@ class Calibrator:
         self.hertz = rospy.Rate(30)
         self._abortLock = Lock()
         self._abort = False
-        self._semaphore = Semaphore(1)
 
     @property
     def isExecuting(self):
@@ -132,15 +131,7 @@ class Calibrator:
 
         self.goToRestPose(side)
 
-        relaxReq = RelaxRequest()
-        relaxReq.side = side
-        self.reachyRelax(relaxReq)
-
-        time.sleep(1.0)
-        
-        self.recover(side)
-
-        time.sleep(1.0)
+        self.recover(side, 1.0)
 
         setGripperPosReq = SetGripperPosRequest()
         setGripperPosReq.side = side
@@ -253,17 +244,18 @@ class Calibrator:
         group.execute(plan, wait = True)
         self.isExecuting = False
 
-    def recover(self, side):
+    def recover(self, side, restTime = 10.0):
         # Set reachy into compliance mode
         relaxReq = RelaxRequest()
         relaxReq.side = side
         self.reachyRelax(relaxReq)
         # Delay
 
-        time.sleep(10.0)
+        time.sleep(restTime)
 
         # Recover from errors
         recovReq = RecoverRequest()
+        rospy.loginfo(f'Attempting recoverty on { self.dxlIds}')
         recovReq.dxl_ids = self.dxlIds
         result = self.reachyRecover(recovReq).result
         self.errorIds = None

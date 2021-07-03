@@ -119,7 +119,7 @@ class Calibrator:
 
         setGripperPosReq = SetGripperPosRequest()
         setGripperPosReq.side = side
-        setGripperPosReq.angle = -math.pi * 0.5
+        setGripperPosReq.angle = math.pi * (0.5 if side == 'right' else -0.5)
         self.setGripperPos(setGripperPosReq)
 
         while(self.goToPose(readyPose) == 2):

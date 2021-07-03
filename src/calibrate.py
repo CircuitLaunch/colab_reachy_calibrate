@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from signal import signal, SIGINT
 import math
 from os.path import expanduser
 import sys
@@ -34,6 +35,8 @@ class Calibrator:
         self._errorIds = None
         self._errorIdsLock = Lock()
         self.hertz = rospy.Rate(30)
+        self._abortLock = Lock()
+        self._abort = False
 
     @property
     def isExecuting(self):
@@ -54,6 +57,15 @@ class Calibrator:
     def errorIds(self, val):
         with self._errorIdsLock:
             self._errorIds = val
+    @property
+    def abort(self):
+        with self._abortLock:
+            return self._abort
+
+    @abort.setter
+    def abort(self, flag):
+        with self._abortLock:
+            self._abort = flag
 
     def getAprilTagPosition(self, side):
         with self._tagPoseLock:
@@ -86,6 +98,7 @@ class Calibrator:
         return math.pi * (0.16666666666667 * nx + 0.16666666666667 * ny)
 
     def createMap(self, side):
+        self.abort = False
         robot = moveit_commander.RobotCommander()
         self.current_group = moveit_commander.MoveGroupCommander(f'{ side }_arm')
 
@@ -152,7 +165,7 @@ class Calibrator:
                     pose.orientation.z = q[2]
                     pose.orientation.w = q[3]
                     # rospy.loginfo(f'({i}, {j}, {k}).({x}, {y}, {z}): Attempting plan and trajectory')
-                    while(True):
+                    while(not self.abort):
                         result = self.goToPose(pose)
                         if result == 0 or result == 1:
                             break;
@@ -181,13 +194,21 @@ class Calibrator:
                         map[i, j, k] = None
 
                     time.sleep(1.0)
+                    if self.abort:
+                        break
+                if self.abort:
+                    break
+            if self.abort:
+                break
 
-        time.sleep(1.0)
 
-        while self.goToPose(readyPose) == 2:
-            self.recover(side)
+        if not self.abort:
+            time.sleep(1.0)
 
-        time.sleep(1.0)
+            while self.goToPose(readyPose) == 2:
+                self.recover(side)
+
+            time.sleep(1.0)
 
         restPoseReq = RestPoseRequest()
         restPoseReq.side = side
@@ -244,7 +265,18 @@ class Calibrator:
         self.errorIds = None
         return result
 
+calibrator = None
+
+def handler(signal_received, frame):
+    # Handle any cleanup here
+    print('SIGINT or CTRL-C detected. Exiting gracefully')
+    if calibrator != None:
+        calibrator.abort = True
+    exit(0)
+
 def main():
+    signal(SIGINT, handler)
+
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('calibrate');
 

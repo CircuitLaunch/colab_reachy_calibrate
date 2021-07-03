@@ -279,6 +279,11 @@ def handler(signal_received, frame):
     print('SIGINT or CTRL-C detected. Exiting gracefully')
     if calibrator != None:
         calibrator.abort = True
+    # exit(0)
+
+
+def handleShutdown():
+    if calibrator != None:
         calibrator.wait()
     exit(0)
 
@@ -290,8 +295,8 @@ def main():
     side = rospy.get_param('/calibrate/side')
     mapSavePath = rospy.get_param('/calibrate/save_file_path')
 
-    rospy.on_shutdown(lambda: calibrator.wait())
-    
+    rospy.on_shutdown(handleShutdown)
+
     calibrator = Calibrator()
 
     rospy.loginfo('************************************************************')

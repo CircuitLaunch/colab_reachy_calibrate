@@ -98,6 +98,12 @@ class Calibrator:
         ny = (width - abs(y)) / width
         return math.pi * (0.16666666666667 * nx + 0.16666666666667 * ny)
 
+    def goToRestPose(self):
+        restPoseReq = RestPoseRequest()
+        restPoseReq.side = side
+        restPoseReq.speed = 0.05
+        self.restPose(restPoseReq)
+
     def createMap(self, side):
         self._semaphore.acquire()
         self.abort = False
@@ -125,10 +131,13 @@ class Calibrator:
 
         self.dxlIds = [ i + (20 if side == 'left' else 10) for i in range(8)]
 
-        restPoseReq = RestPoseRequest()
-        restPoseReq.side = side
-        restPoseReq.speed = 0.05
-        self.restPose(restPoseReq);
+        self.goToRestPose()
+
+        relaxReq = RelaxRequest()
+        relaxReq.side = side
+        self.reachyRelax(relaxReq)
+
+        self.recover(side)
 
         time.sleep(1.0)
 
@@ -167,11 +176,11 @@ class Calibrator:
                     pose.orientation.z = q[2]
                     pose.orientation.w = q[3]
                     # rospy.loginfo(f'({i}, {j}, {k}).({x}, {y}, {z}): Attempting plan and trajectory')
-                    while(not self.abort):
+                    while(True):
                         result = self.goToPose(pose)
                         if result == 0 or result == 1:
                             break;
-                        if result == 2:
+                        if not self.abort && result == 2:
                             recovering = True
                             while(recovering):
                                 rospy.loginfo('Actuator error, recovering')
@@ -184,6 +193,10 @@ class Calibrator:
                                     else:
                                         rospy.loginfo('Failed to recover from actuator error, waiting 10 seconds, then trying to recover again')
                                         time.sleep(10.0)
+                        if self.abort:
+                            self.goToRestPose()
+                            self._semaphore.release()
+                            exit(0)
                         # Try again
 
                     # Wait for latest pose update?
@@ -196,26 +209,16 @@ class Calibrator:
                         map[i, j, k] = None
 
                     time.sleep(1.0)
-                    if self.abort:
-                        break
-                if self.abort:
-                    break
-            if self.abort:
-                break
 
 
-        if not self.abort:
-            time.sleep(1.0)
+        time.sleep(1.0)
 
-            while self.goToPose(readyPose) == 2:
-                self.recover(side)
+        while self.goToPose(readyPose) == 2:
+            self.recover(side)
 
-            time.sleep(1.0)
+        time.sleep(1.0)
 
-        restPoseReq = RestPoseRequest()
-        restPoseReq.side = side
-        restPoseReq.speed = 0.05
-        self.restPose(restPoseReq);
+        self.goToRestPose()
 
         relaxReq = RelaxRequest()
         relaxReq.side = side

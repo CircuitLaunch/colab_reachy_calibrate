@@ -179,6 +179,7 @@ class Calibrator:
                     while(True):
                         result = self.goToPose(pose)
                         if self.abort:
+                            rospy.loginfo('Aborting. Goint to restpose')
                             self.goToRestPose()
                             self._semaphore.release()
                             return None

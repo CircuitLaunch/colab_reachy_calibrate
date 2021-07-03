@@ -272,29 +272,28 @@ class Calibrator:
         self._semaphore.acquire()
         self._semaphore.release()
 
-calibrator = None
-
-def handler(signal_received, frame):
-    # Handle any cleanup here
-    print('SIGINT or CTRL-C detected. Exiting gracefully')
-    if calibrator != None:
-        calibrator.abort = True
-        calibrator.wait()
-    rospy.signal_shutdown("SIGINT")
-    exit(0)
-
 def main():
-    signal(SIGINT, handler)
-
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('calibrate', disable_signals=True);
 
     side = rospy.get_param('/calibrate/side')
     mapSavePath = rospy.get_param('/calibrate/save_file_path')
 
-    # rospy.on_shutdown(handleShutdown)
-
     calibrator = Calibrator()
+
+    def handler():
+        print('SIGINT or CTRL-C detected. Exiting gracefully')
+        rospy.signal_shutdown("SIGINT")
+
+    signal(SIGINT, handler)
+
+    def handleShutdown():
+        print('rospy shutdown')
+        calibrator.abort = True
+        calibrator.wait()
+        exit(0)
+
+    rospy.on_shutdown(handleShutdown)
 
     rospy.loginfo('************************************************************')
     rospy.loginfo(f'Calibrating {side} side')

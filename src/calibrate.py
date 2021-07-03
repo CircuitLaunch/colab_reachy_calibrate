@@ -281,11 +281,11 @@ def main():
 
     calibrator = Calibrator()
 
-    def handler():
+    def sigintHandler(sig, frame):
         print('SIGINT or CTRL-C detected. Exiting gracefully')
         rospy.signal_shutdown("SIGINT")
 
-    signal(SIGINT, handler)
+    signal(SIGINT, sigintHandler)
 
     def handleShutdown():
         print('rospy shutdown')

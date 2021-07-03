@@ -196,7 +196,7 @@ class Calibrator:
                         if self.abort:
                             self.goToRestPose()
                             self._semaphore.release()
-                            exit(0)
+                            return None
                         # Try again
 
                     # Wait for latest pose update?
@@ -209,7 +209,6 @@ class Calibrator:
                         map[i, j, k] = None
 
                     time.sleep(1.0)
-
 
         time.sleep(1.0)
 

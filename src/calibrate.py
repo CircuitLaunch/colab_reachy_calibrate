@@ -282,19 +282,20 @@ def handler(signal_received, frame):
     print('SIGINT or CTRL-C detected. Exiting gracefully')
     if calibrator != None:
         calibrator.abort = True
+        calibrator.wait()
+    rospy.signal_shutdown("SIGINT")
     # exit(0)
 
 
 def handleShutdown():
-    if calibrator != None:
-        calibrator.wait()
     exit(0)
 
 def main():
     signal(SIGINT, handler)
 
     moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('calibrate');
+    rospy.init_node('calibrate', disable_signals=True);
+
     side = rospy.get_param('/calibrate/side')
     mapSavePath = rospy.get_param('/calibrate/save_file_path')
 

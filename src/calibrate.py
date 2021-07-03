@@ -263,10 +263,7 @@ class Calibrator:
 
         # Recover from errors
         recovReq = RecoverRequest()
-        if self.errorIds != None:
-            recovReq.dxl_ids = self.errorIds
-        else:
-            recovReq.dxl_ids = self.dxlIds
+        recovReq.dxl_ids = self.dxlIds
         result = self.reachyRecover(recovReq).result
         self.errorIds = None
         return result

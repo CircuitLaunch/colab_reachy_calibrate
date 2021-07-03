@@ -9,7 +9,7 @@ from geometry_msgs.msg import Pose
 from tf.transformations import *
 from colab_reachy_control.msg import Telemetry
 from colab_reachy_control.srv import RestPose, RestPoseRequest, SetGripperPos, SetGripperPosRequest, Recover, RecoverRequest, Relax, RelaxRequest, Zero, ZeroRequest
-from threading import Lock, Thread
+from threading import Lock, Thread, Semaphore
 import numpy as np
 import time
 
@@ -37,6 +37,7 @@ class Calibrator:
         self.hertz = rospy.Rate(30)
         self._abortLock = Lock()
         self._abort = False
+        self._semaphore = Semaphore(1)
 
     @property
     def isExecuting(self):
@@ -98,6 +99,7 @@ class Calibrator:
         return math.pi * (0.16666666666667 * nx + 0.16666666666667 * ny)
 
     def createMap(self, side):
+        self.semaphore.acquire()
         self.abort = False
         robot = moveit_commander.RobotCommander()
         self.current_group = moveit_commander.MoveGroupCommander(f'{ side }_arm')
@@ -218,6 +220,7 @@ class Calibrator:
         relaxReq = RelaxRequest()
         relaxReq.side = side
         self.reachyRelax(relaxReq)
+        self.semaphore.release()
         return map
 
     def goToPose(self, pose):
@@ -265,6 +268,10 @@ class Calibrator:
         self.errorIds = None
         return result
 
+    def wait(self):
+        self.semaphore.acquire()
+        self.semaphore.release()
+
 calibrator = None
 
 def handler(signal_received, frame):
@@ -272,6 +279,7 @@ def handler(signal_received, frame):
     print('SIGINT or CTRL-C detected. Exiting gracefully')
     if calibrator != None:
         calibrator.abort = True
+        calibrator.wait()
     exit(0)
 
 def main():

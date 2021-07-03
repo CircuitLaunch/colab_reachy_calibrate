@@ -136,7 +136,9 @@ class Calibrator:
         relaxReq.side = side
         self.reachyRelax(relaxReq)
 
-        # self.recover(side)
+        time.sleep(1.0)
+        
+        self.recover(side)
 
         time.sleep(1.0)
 
@@ -153,6 +155,7 @@ class Calibrator:
         map1d = np.array([None] * (self.divx+1) * (self.divy+1) * (self.divz+1))
         map = map1d.reshape(self.divx+1, self.divy+1, self.divz+1)
         pose = Pose()
+
         for k in range(0, self.divz + 1):
             z = self.minz + self.stepz * k
             for j in range(0, self.divy + 1):
@@ -178,9 +181,9 @@ class Calibrator:
                     while(True):
                         result = self.goToPose(pose)
                         if self.abort:
-                            rospy.loginfo('Aborting. Goint to restpose')
+                            rospy.loginfo('Aborting, going to restpose')
                             self.goToRestPose(side)
-                            rospy.signal_shutdown()
+                            rospy.signal_shutdown('User abort')
                             return None
                         if result == 0 or result == 1:
                             break;

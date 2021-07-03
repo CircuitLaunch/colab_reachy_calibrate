@@ -178,6 +178,10 @@ class Calibrator:
                     # rospy.loginfo(f'({i}, {j}, {k}).({x}, {y}, {z}): Attempting plan and trajectory')
                     while(True):
                         result = self.goToPose(pose)
+                        if self.abort:
+                            self.goToRestPose()
+                            self._semaphore.release()
+                            return None
                         if result == 0 or result == 1:
                             break;
                         if not self.abort and result == 2:
@@ -193,10 +197,6 @@ class Calibrator:
                                     else:
                                         rospy.loginfo('Failed to recover from actuator error, waiting 10 seconds, then trying to recover again')
                                         time.sleep(10.0)
-                        if self.abort:
-                            self.goToRestPose()
-                            self._semaphore.release()
-                            return None
                         # Try again
 
                     # Wait for latest pose update?

@@ -287,10 +287,11 @@ def main():
 
     moveit_commander.roscpp_initialize(sys.argv)
     rospy.init_node('calibrate');
-
     side = rospy.get_param('/calibrate/side')
     mapSavePath = rospy.get_param('/calibrate/save_file_path')
 
+    rospy.on_shutdown(lambda: calibrator.wait())
+    
     calibrator = Calibrator()
 
     rospy.loginfo('************************************************************')

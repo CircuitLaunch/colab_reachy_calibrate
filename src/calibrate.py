@@ -179,7 +179,7 @@ class Calibrator:
                         result = self.goToPose(pose)
                         if self.abort:
                             rospy.loginfo('Aborting. Goint to restpose')
-                            self.goToRestPose()
+                            self.goToRestPose(side)
                             rospy.signal_shutdown()
                             return None
                         if result == 0 or result == 1:

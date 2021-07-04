@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from signal import signal, SIGINT
 import math
 import json
 from os.path import expanduser
@@ -9,13 +10,14 @@ from geometry_msgs.msg import Pose
 from tf.transformations import *
 from colab_reachy_control.msg import Telemetry
 from colab_reachy_control.srv import RestPose, RestPoseRequest, SetGripperPos, SetGripperPosRequest, Recover, RecoverRequest, Relax, RelaxRequest, Zero, ZeroRequest
-from threading import Lock, Thread
+from threading import Lock, Thread, Semaphore
 import numpy as np
 import time
 
 class Calibrator:
     def __init__(self):
         self.tagTopic = rospy.get_param('/calibrate/april_tag_topic')
+        rospy.loginfo(f'Searching for {self.tagTopic}')
         self.minx = rospy.get_param('/calibrate/min_x')
         self.maxx = rospy.get_param('/calibrate/max_x')
         self.miny = rospy.get_param('/calibrate/min_y')
@@ -35,6 +37,8 @@ class Calibrator:
         self._errorIds = None
         self._errorIdsLock = Lock()
         self.hertz = rospy.Rate(30)
+        self._abortLock = Lock()
+        self._abort = False
 
     @property
     def isExecuting(self):
@@ -55,6 +59,15 @@ class Calibrator:
     def errorIds(self, val):
         with self._errorIdsLock:
             self._errorIds = val
+    @property
+    def abort(self):
+        with self._abortLock:
+            return self._abort
+
+    @abort.setter
+    def abort(self, flag):
+        with self._abortLock:
+            self._abort = flag
 
     def getAprilTagPosition(self, side):
         with self._tagPoseLock:
@@ -64,7 +77,7 @@ class Calibrator:
             return x, y, z
 
     def setAprilTagPose(self, pose):
-        with self.tagPoseLock:
+        with self._tagPoseLock:
             self._tagPose = pose
 
     def setTelemetry(self, telem: Telemetry):
@@ -76,7 +89,7 @@ class Calibrator:
         for i in range(0, len(dxlIds)):
             if errorBits[i] != 0:
                 thereWereErrors = True
-                errorIds.append(dxlIds[i])
+                errorIds.append(int(dxlIds[i]))
         if thereWereErrors:
             self.errorIds = errorIds
 
@@ -86,7 +99,14 @@ class Calibrator:
         ny = (width - abs(y)) / width
         return math.pi * (0.16666666666667 * nx + 0.16666666666667 * ny)
 
+    def goToRestPose(self, side):
+        restPoseReq = RestPoseRequest()
+        restPoseReq.side = side
+        restPoseReq.speed = 0.05
+        self.restPose(restPoseReq)
+
     def createMap(self, side):
+        self.abort = False
         robot = moveit_commander.RobotCommander()
         self.current_group = moveit_commander.MoveGroupCommander(f'{ side }_arm')
 
@@ -111,13 +131,17 @@ class Calibrator:
 
         self.dxlIds = [ i + (20 if side == 'left' else 10) for i in range(8)]
 
-        restPoseReq = RestPoseRequest()
-        restPoseReq.side = side
-        restPoseReq.speed = 0.05
-        self.restPose(restPoseReq);
+        self.goToRestPose(side)
 
-        time.sleep(1.0)
+        # self.recover(side, 1.0)
 
+        '''
+        setGripperPosReq = SetGripperPosRequest()
+        setGripperPosReq.side = side
+        setGripperPosReq.angle = math.pi * (0.5 if side == 'right' else -0.5)
+        self.setGripperPos(setGripperPosReq)
+        '''
+        
         while(self.goToPose(readyPose) == 2):
             self.recover(side)
 
@@ -126,6 +150,7 @@ class Calibrator:
         map1d = np.array([None] * (self.divx+1) * (self.divy+1) * (self.divz+1))
         map = map1d.reshape(self.divx+1, self.divy+1, self.divz+1)
         pose = Pose()
+
         for k in range(0, self.divz + 1):
             z = self.minz + self.stepz * k
             for j in range(0, self.divy + 1):
@@ -150,9 +175,14 @@ class Calibrator:
                     # rospy.loginfo(f'({i}, {j}, {k}).({x}, {y}, {z}): Attempting plan and trajectory')
                     while(True):
                         result = self.goToPose(pose)
+                        if self.abort:
+                            rospy.loginfo('Aborting, going to restpose')
+                            self.goToRestPose(side)
+                            rospy.signal_shutdown('User abort')
+                            return None
                         if result == 0 or result == 1:
                             break;
-                        if result == 2:
+                        if not self.abort and result == 2:
                             recovering = True
                             while(recovering):
                                 rospy.loginfo('Actuator error, recovering')
@@ -185,10 +215,7 @@ class Calibrator:
 
         time.sleep(1.0)
 
-        restPoseReq = RestPoseRequest()
-        restPoseReq.side = side
-        restPoseReq.speed = 0.05
-        self.restPose(restPoseReq);
+        self.goToRestPose(side)
 
         relaxReq = RelaxRequest()
         relaxReq.side = side
@@ -221,33 +248,43 @@ class Calibrator:
         group.execute(plan, wait = True)
         self.isExecuting = False
 
-    def recover(self, side):
+    def recover(self, side, restTime = 10.0):
         # Set reachy into compliance mode
         relaxReq = RelaxRequest()
         relaxReq.side = side
         self.reachyRelax(relaxReq)
         # Delay
 
-        time.sleep(10.0)
+        time.sleep(restTime)
 
         # Recover from errors
         recovReq = RecoverRequest()
-        if self.errorIds != None:
-            recovReq.dxl_ids = self.errorIds
-        else:
-            recovReq.dxl_ids = self.dxlIds
+        rospy.loginfo(f'Attempting recovery on { self.dxlIds}')
+        recovReq.dxl_ids = self.dxlIds
         result = self.reachyRecover(recovReq).result
         self.errorIds = None
         return result
 
 def main():
     moveit_commander.roscpp_initialize(sys.argv)
-    rospy.init_node('calibrate');
+    rospy.init_node('calibrate', disable_signals=True);
 
     side = rospy.get_param('/calibrate/side')
     mapSavePath = rospy.get_param('/calibrate/save_file_path')
 
     calibrator = Calibrator()
+
+    def sigintHandler(sig, frame):
+        print('SIGINT or CTRL-C detected. Exiting gracefully')
+        calibrator.abort = True
+
+    signal(SIGINT, sigintHandler)
+
+    def handleShutdown():
+        print('rospy shutdown')
+        exit(-1)
+
+    rospy.on_shutdown(handleShutdown)
 
     rospy.loginfo('************************************************************')
     rospy.loginfo(f'Calibrating {side} side')

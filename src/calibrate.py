@@ -131,7 +131,7 @@ class Calibrator:
 
         self.goToRestPose(side)
 
-        self.recover(side, 1.0)
+        # self.recover(side, 1.0)
 
         setGripperPosReq = SetGripperPosRequest()
         setGripperPosReq.side = side

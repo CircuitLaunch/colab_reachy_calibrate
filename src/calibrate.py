@@ -255,7 +255,7 @@ class Calibrator:
 
         # Recover from errors
         recovReq = RecoverRequest()
-        rospy.loginfo(f'Attempting recoverty on { self.dxlIds}')
+        rospy.loginfo(f'Attempting recovery on { self.dxlIds}')
         recovReq.dxl_ids = self.dxlIds
         result = self.reachyRecover(recovReq).result
         self.errorIds = None

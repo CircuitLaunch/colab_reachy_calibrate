@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from signal import signal, SIGINT
 import math
+import json
 from os.path import expanduser
 import sys
 import rospy
@@ -292,7 +293,8 @@ def main():
     rospy.loginfo('------------------------------------------------------------')
 
     f = open(expanduser(mapSavePath), 'wt')
-    map.tofile(f, sep=',', format='%s')
+    json.dump(map, f)
+    # map.tofile(f, sep=',', format='%s')
     f.close()
     rospy.loginfo('************************************************************')
 

@@ -16,6 +16,7 @@ import time
 class Calibrator:
     def __init__(self):
         self.tagTopic = rospy.get_param('/calibrate/april_tag_topic')
+        rospy.loginfo(f'Searching for {self.tagTopic}')
         self.minx = rospy.get_param('/calibrate/min_x')
         self.maxx = rospy.get_param('/calibrate/max_x')
         self.miny = rospy.get_param('/calibrate/min_y')
@@ -75,7 +76,7 @@ class Calibrator:
             return x, y, z
 
     def setAprilTagPose(self, pose):
-        with self.tagPoseLock:
+        with self._tagPoseLock:
             self._tagPose = pose
 
     def setTelemetry(self, telem: Telemetry):
@@ -133,11 +134,13 @@ class Calibrator:
 
         # self.recover(side, 1.0)
 
+        '''
         setGripperPosReq = SetGripperPosRequest()
         setGripperPosReq.side = side
         setGripperPosReq.angle = math.pi * (0.5 if side == 'right' else -0.5)
         self.setGripperPos(setGripperPosReq)
-
+        '''
+        
         while(self.goToPose(readyPose) == 2):
             self.recover(side)
 

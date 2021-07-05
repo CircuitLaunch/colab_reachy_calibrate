@@ -246,7 +246,8 @@ class Calibrator:
         return result
 
     def trajectoryLoop(self, group, plan):
-        group.execute(plan, wait = True)
+        result = group.execute(plan, wait = True)
+        rospy.loginfo(f'group.execute() returned {result}')
         self.isExecuting = False
 
     def recover(self, side, restTime = 10.0):

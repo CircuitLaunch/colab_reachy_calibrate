@@ -80,11 +80,11 @@ class Compensator:
         ros.init_node('compensator')
 
         rf = open(ros.get_param('/calibrate/right_error_map_file'))
-        self.rightMap = json.load(rf)
+        self.rightMap = np.array(json.load(rf))
         rf.close()
 
         lr = open(ros.get_param('/calibrate/left_error_map_file'))
-        self.leftMap = json.load(lf)
+        self.leftMap = np.array(json.load(lf))
         lf.close()
 
         self.ServiceServer('compensate', TransformPose, self.compensate)
@@ -107,4 +107,3 @@ if __name__ == '__main__':
     Compensator()
 
     rospy.spin()
-    

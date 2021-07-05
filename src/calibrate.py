@@ -205,7 +205,7 @@ class Calibrator:
                         map[i, j, k] = ((x, y, z), (x - ax, y - ay, z - az))
                     elif result == 1:
                         rospy.loginfo(f'No plan for goal at ({i}, {j}, {k}) = ({x}, {y}, {z}); marking as out of bounds')
-                        map[i, j, k] = None
+                        map[i, j, k] = ((x, y, z), (0.0, 0.0, 0.0))
 
                     time.sleep(1.0)
 

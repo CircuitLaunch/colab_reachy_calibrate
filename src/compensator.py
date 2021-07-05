@@ -68,7 +68,7 @@ class ErrorMap:
         errory = 0.0
         errorz = 0.0
 
-        for i = range(0, 8):
+        for i in range(0, 8):
             errorx += errors[i][0] * weights[i]
             errory += errors[i][1] * weights[i]
             errorz += errors[i][2] * weights[i]

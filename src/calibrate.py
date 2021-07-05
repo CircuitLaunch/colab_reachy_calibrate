@@ -141,7 +141,7 @@ class Calibrator:
         setGripperPosReq.angle = math.pi * (0.5 if side == 'right' else -0.5)
         self.setGripperPos(setGripperPosReq)
         '''
-        
+
         while(self.goToPose(readyPose) == 2):
             self.recover(side)
 
@@ -199,6 +199,7 @@ class Calibrator:
 
                     # Wait for latest pose update?
                     if result == 0:
+                        time.sleep(3)
                         ax, ay, az = self.getAprilTagPosition(side)
                         rospy.loginfo(f'Error at ({i}, {j}, {k}) = ({x - ax}, {y - ay}, {z - az})')
                         map[i, j, k] = ((x, y, z), (x - ax, y - ay, z - az))
@@ -296,7 +297,8 @@ def main():
     rospy.loginfo('------------------------------------------------------------')
 
     f = open(expanduser(mapSavePath), 'wt')
-    json.dump(map, f)
+    serializable = map.tolist()
+    json.dump(serializable, f)
     # map.tofile(f, sep=',', format='%s')
     f.close()
     rospy.loginfo('************************************************************')

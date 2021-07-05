@@ -1,0 +1,5 @@
+string side
+geometry_msgs/Pose in_pose
+---
+geometry_msgs/Pose out_pose
+bool in_bounds

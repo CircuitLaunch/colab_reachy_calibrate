@@ -1,7 +1,7 @@
 <launch>
   <node name="calibrate" pkg="colab_reachy_calibrate" type="calibrate.py" respawn="false" output="screen">
     <param name="side" value="right" />
-    <param name="save_file_path" value="~/Documents/ReachyRightArmErrorMap.txt" />
+    <param name="save_file_path" value="$(find colab_reachy_grasp)/config/ReachyRightArmErrorMap.json" />
     <param name="april_tag_topic" value="cubePose" />
     <param name="min_x" value="0.2" />
     <param name="max_x" value="0.5" />

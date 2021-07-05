@@ -8,10 +8,19 @@ project(colab_reachy_calibrate)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
+  roscpp
   rospy
+  dynamixel_sdk
+  actionlib_msgs
+  control_msgs
+  diagnostic_msgs
+  geometry_msgs
+  nav_msgs
+  sensor_msgs
   std_msgs
   std_srvs
+  genmsg
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -55,11 +64,10 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
-#   Service2.srv
-# )
+add_service_files(
+  FILES
+  TransformPose.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(

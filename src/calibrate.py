@@ -32,6 +32,8 @@ class Calibrator:
         self.stepz = (self.maxz - self.minz) / self.divz
         self._isExecuting = False
         self._isExecutingLock = Lock()
+        self._trajectoryResult = False
+        self._trajectoryResultLock = Lock()
         self._tagPose = Pose()
         self._tagPoseLock = Lock()
         self._errorIds = None
@@ -49,6 +51,16 @@ class Calibrator:
     def isExecuting(self, val):
         with self._isExecutingLock:
             self._isExecuting = val
+
+    @property
+    def trajectoryResult(self):
+        with self._trajectoryResultLock:
+            return self._trajectoryResult
+
+    @trajectoryResult.setter
+    def trajectoryResult(self, val):
+        with self._trajectoryResultLock:
+            self._trajectoryResult = val
 
     @property
     def errorIds(self):
@@ -230,9 +242,11 @@ class Calibrator:
         if plan[0]:
             execThread = Thread(target=self.trajectoryLoop, args=(self.current_group, plan[1]))
             self.isExecuting = True
+            self.trajectoryResult = False
             result = 0
             execThread.start()
             # Loop here testing for overloads
+
             while(self.isExecuting):
                 self.hertz.sleep()
                 if self.errorIds != None:
@@ -240,14 +254,15 @@ class Calibrator:
                     result = 2
                     self.isExecuting = False
             execThread.join()
+            if not self.trajectoryResult:
+                result = 2
         else:
             self.hertz.sleep()
 
         return result
 
     def trajectoryLoop(self, group, plan):
-        result = group.execute(plan, wait = True)
-        rospy.loginfo(f'group.execute() returned {result}')
+        self.trajectoryResult = group.execute(plan, wait = True)
         self.isExecuting = False
 
     def recover(self, side, restTime = 10.0):

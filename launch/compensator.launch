@@ -1,5 +1,5 @@
 <launch>
-  <node name="compensator" pkg="colab_reachy_calibrate" type="compensateor.py" respawn="false" output="screen">
+  <node name="compensator" pkg="colab_reachy_calibrate" type="compensator.py" respawn="false" output="screen">
     <param name="right_error_map_file" value="$(find colab_reachy_calibrate)/config/ReachyRightArmErrorMap.json" />
     <param name="left_error_map_file" value="$(find colab_reachy_calibrate)/config/ReachyLeftArmErrorMap.json" />
   </node>
